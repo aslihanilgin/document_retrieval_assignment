@@ -39,6 +39,12 @@ class Retrieve:
         # debug
         print("reconstructed_index: {}".format(reconstructed_index))
 
+    def length_of_vector_equation(self, term_weighting_values):
+        sum = 0
+        for value in term_weighting_values:
+            sum += pow(value, 2)
+        return math.sqrt(sum)
+
     def binary_term_weighting_computation(self, index):
 
     def tf_term_weighting_computation(self, index):
@@ -66,5 +72,3 @@ class Retrieve:
 
 
         return list(range(1,11))
-
-
