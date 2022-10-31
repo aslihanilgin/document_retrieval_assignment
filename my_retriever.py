@@ -51,16 +51,16 @@ class Retrieve:
     # of doc ids for relevant docs (in rank order).
     def for_query(self, query):
 
-        if self.term_weighting = 'binary':
-            binary_term_weighting_computation()
+        if self.term_weighting == 'binary':
+            self.binary_term_weighting_computation()
 
-        elif self.term_weighting = 'term_frequency':
-            tf_term_weighting_computation()
+        elif self.term_weighting == 'term_frequency':
+            self.tf_term_weighting_computation()
 
-        elif self.term_weighting = 'tfidf':
-            tfidf_term_weighting_computation()
+        elif self.term_weighting == 'tfidf':
+            self.tfidf_term_weighting_computation()
         else:
-            binary_term_weighting_computation()
+            self.binary_term_weighting_computation()
 
        
 
