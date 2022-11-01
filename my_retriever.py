@@ -26,7 +26,8 @@ class Retrieve:
 
     def reconstruct_index(self, initial_index):
         # initiliase the keys as document ids
-        reconstructed_index = dict.fromkeys(self.doc_ids, None)
+        reconstructed_index = dict.fromkeys(self.doc_ids, dict())
+        # reconstructed_index= dict()
         # debug
         # import pdb; pdb.set_trace()
 
@@ -34,10 +35,10 @@ class Retrieve:
             for doc_id, tf_value in doc_id_tf_values_dict.items():
                 # debug
                 # print("doc_id_tf_values_dict.items(): {}".format(doc_id_tf_values_dict.items()))
-                reconstructed_index.update({doc_id: {term: tf_value}})
+                reconstructed_index[doc_id].update({term: tf_value})
                
         # debug
-        # print("reconstructed_index: {}".format(reconstructed_index))
+        # print("reconstructed_index: {}".format(str(reconstructed_index[1])[:1000] ))
         return reconstructed_index
 
     def length_of_vector_equation(self, term_weighting_values):
@@ -49,13 +50,16 @@ class Retrieve:
     def binary_term_weighting_computation(self, query):
         # get only unique terms from query
         unique_terms_in_query = set(query)
-        doc_terms = set()
+        # import pdb; pdb.set_trace()
         for doc, term_and_tf_dict in self.reconstructed_index.items():
-            [doc_terms.add(term) for term, tf in term_and_tf_dict.items()]
+            doc_terms = set()
+            # for each doc add all the terms in the doc to doc_terms
+            for term, tf in term_and_tf_dict.items():
+                doc_terms.add(term)
             common_terms = unique_terms_in_query.intersection(set(doc_terms))
             # debug
-            if len(common_terms) > 0:
-                print("doc: {}, query: {}, \ncommon_terms: {}\n".format(doc, unique_terms_in_query, common_terms))
+            # if len(common_terms) > 0:
+            #     print("doc no: {},\n doc_terms: {}, \nquery: {}, \ncommon_terms: {}\n".format(doc, doc_terms, unique_terms_in_query, common_terms))
 
     # def tf_term_weighting_computation(self, index, query):
 
