@@ -41,7 +41,7 @@ class Retrieve:
         # print("reconstructed_index: {}".format(str(reconstructed_index[1])[:1000] ))
         return reconstructed_index
 
-    def length_of_vector_equation(self, term_weighting_values):
+    def vector_length_equation(self, term_weighting_values):
         sum = 0
         for value in term_weighting_values:
             sum += pow(value, 2)
@@ -51,13 +51,15 @@ class Retrieve:
         # get only unique terms from query
         unique_terms_in_query = set(query)
         
+        # debug
+        import pdb; pdb.set_trace()
         for doc, term_and_tf_dict in self.reconstructed_index.items():
             doc_terms = set()
             # for each doc add all the terms in the doc to doc_terms
             for term, tf in term_and_tf_dict.items():
                 doc_terms.add(term)
 
-            common_terms = unique_terms_in_query.intersection(set(doc_terms))
+            common_terms = unique_terms_in_query.intersection(doc_terms)
             # debug
             # if len(common_terms) > 0:
             #     print("doc no: {},\n doc_terms: {}, \nquery: {}, \ncommon_terms: {}\n".format(doc, doc_terms, unique_terms_in_query, common_terms))
@@ -67,7 +69,11 @@ class Retrieve:
             rest_of_query_terms = unique_terms_in_query.difference(common_terms)
             doc_terms_not_in_common_terms = doc_terms.difference(common_terms.union(rest_of_query_terms))
 
-        sum_of_query_values = len(unique_terms_in_query)
+        query_vector_length = self.vector_length_equation(unique_terms_in_query)
+
+        # input list : common terms + doc/common_terms
+                                                        # for binary this can be just doc_terms
+        doc_vector_length = self.vector_length_equation(common_terms.union(doc_terms.difference(common_terms)))
         
 
 
