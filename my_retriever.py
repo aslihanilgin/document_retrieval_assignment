@@ -4,6 +4,9 @@ from cmath import sqrt
 import math
 from operator import index
 
+import numpy as np
+from numpy.linalg import norm
+
 class Retrieve:
     
     # Create new Retrieve object storing index and term weighting
@@ -47,12 +50,15 @@ class Retrieve:
             sum += pow(value, 2)
         return math.sqrt(sum)
 
+    def cosine_similarity_computation(self, query_values, query_vector, doc_values, doc_vector):
+    
+
+
     def binary_term_weighting_computation(self, query):
         # get only unique terms from query
         unique_terms_in_query = set(query)
         
-        # debug
-        import pdb; pdb.set_trace()
+        
         for doc, term_and_tf_dict in self.reconstructed_index.items():
             doc_terms = set()
             # for each doc add all the terms in the doc to doc_terms
@@ -68,13 +74,28 @@ class Retrieve:
 
             rest_of_query_terms = unique_terms_in_query.difference(common_terms)
             doc_terms_not_in_common_terms = doc_terms.difference(common_terms.union(rest_of_query_terms))
+    
+            doc_common_term_and_tf_value_dict = dict()
 
-        query_vector_length = self.vector_length_equation(unique_terms_in_query)
+            for term in common_terms:
+                doc_common_term_and_tf_value_dict[term] = self.reconstructed_index[doc][term]
+                # print("term: {}, self.reconstructed_index[doc][term]: {}".format(term, self.reconstructed_index[doc][term]))
 
-        # input list : common terms + doc/common_terms
-                                                        # for binary this can be just doc_terms
-        doc_vector_length = self.vector_length_equation(common_terms.union(doc_terms.difference(common_terms)))
-        
+            # debug
+            # print("common_term_in_doc_tf_values: {}".format(doc_common_term_and_tf_value_dict))
+
+            # just for binary
+            query_vector_length = self.vector_length_equation([1] * (len(unique_terms_in_query)))
+            # debug
+            # print("query_vector_length: {}".format(query_vector_length))
+
+                                                            # for binary this can be just doc_terms
+            doc_vector_length = self.vector_length_equation(doc_common_term_and_tf_value_dict.values())
+            # debug
+            # print("doc_vector_length: {}".format(doc_vector_length))
+
+            self.cosine_similarity_computation([1] * (len(unique_terms_in_query)),query_vector_length, 
+                doc_common_term_and_tf_value_dict.values(), doc_vector_length)
 
 
     # def tf_term_weighting_computation(self, index, query):
