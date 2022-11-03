@@ -50,14 +50,15 @@ class Retrieve:
             sum += pow(value, 2)
         return math.sqrt(sum)
 
-    def cosine_similarity_computation(self, query_values, query_vector, doc_values, doc_vector):
-    
+    def cosine_similarity_computation(self, doc, query_values, query_vector, doc_values, doc_vector):
+        # debug
+        print("query_values: {}, doc_values: {}".format(query_values, doc_values))
+        print("query_values: {}, doc_values: {}".format(len(query_values), len(doc_values)))
+        # i want doc product of query_values * doc_values
 
 
-    def binary_term_weighting_computation(self, query):
-        # get only unique terms from query
-        unique_terms_in_query = set(query)
-        
+    def binary_term_weighting_computation(self, query):      
+
         
         for doc, term_and_tf_dict in self.reconstructed_index.items():
             doc_terms = set()
@@ -65,27 +66,31 @@ class Retrieve:
             for term, tf in term_and_tf_dict.items():
                 doc_terms.add(term)
 
-            common_terms = unique_terms_in_query.intersection(doc_terms)
+            common_terms = set(query).intersection(doc_terms)
             # debug
             # if len(common_terms) > 0:
             #     print("doc no: {},\n doc_terms: {}, \nquery: {}, \ncommon_terms: {}\n".format(doc, doc_terms, unique_terms_in_query, common_terms))
             # debug
             # print("doc no: {}".format(doc))
 
-            rest_of_query_terms = unique_terms_in_query.difference(common_terms)
+            rest_of_query_terms = set(query).difference(common_terms)
             doc_terms_not_in_common_terms = doc_terms.difference(common_terms.union(rest_of_query_terms))
     
             doc_common_term_and_tf_value_dict = dict()
 
             for term in common_terms:
                 doc_common_term_and_tf_value_dict[term] = self.reconstructed_index[doc][term]
-                # print("term: {}, self.reconstructed_index[doc][term]: {}".format(term, self.reconstructed_index[doc][term]))
+                # TODO: besides binary, following line has to be implemented
 
+                # print("term: {}, self.reconstructed_index[doc][term]: {}".format(term, self.reconstructed_index[doc][term]))
+                
             # debug
-            # print("common_term_in_doc_tf_values: {}".format(doc_common_term_and_tf_value_dict))
+            print("doc_common_term_and_tf_value_dict: {}".format(doc_common_term_and_tf_value_dict))
 
             # just for binary
-            query_vector_length = self.vector_length_equation([1] * (len(unique_terms_in_query)))
+            # Reference: https://note.nkmk.me/en/python-list-initialize/
+            query_values = [1] * (len(set(query)))
+            query_vector_length = self.vector_length_equation(query_values)
             # debug
             # print("query_vector_length: {}".format(query_vector_length))
 
@@ -94,7 +99,7 @@ class Retrieve:
             # debug
             # print("doc_vector_length: {}".format(doc_vector_length))
 
-            self.cosine_similarity_computation([1] * (len(unique_terms_in_query)),query_vector_length, 
+            self.cosine_similarity_computation(doc, query_values ,query_vector_length, 
                 doc_common_term_and_tf_value_dict.values(), doc_vector_length)
 
 
@@ -107,8 +112,20 @@ class Retrieve:
     # represented as a list of preprocessed terms). Returns list 
     # of doc ids for relevant docs (in rank order).
     def for_query(self, query):
+        # debug
+        print("query: {}".format(query))
+
+        # create query dictionary with query terms and their tf value
+        # Reference: https://www.learnpythonwithrune.org/python-dictionaries-for-frequency-count/
+        query_dict = dict()
+        for term in query:
+            query_dict[term] = query_dict.get(term, 0) + 1
+        
+        # debug
+        print("query_dict: {}".format(query_dict))
+
         #debug
-        self.binary_term_weighting_computation(query)
+        self.binary_term_weighting_computation(query_dict)
 
         # if self.term_weighting == 'binary':
         #     self.binary_term_weighting_computation()
@@ -125,60 +142,3 @@ class Retrieve:
 
 
         return list(range(1,11))
-
-
-################################
-
-def length_of_vector_equation(self, term_weighting_values):
-        sum = 0
-        for value in term_weighting_values:
-            sum += pow(value, 2)
-        return math.sqrt(sum)
-
-def compute_doc_vector_size(self, term_weighting_choice, query):        
-    # if term_weighting_choice == 'term_frequency':
-        
-    # elif term_weighting_choice == 'tfidf':
-
-    # else:
-        # binary 
-
-        # get only unique terms from query
-        unique_terms_in_query = list(set(query))
-            
-        binary_values_for_query_terms = dict() # term -> binary value
-
-        # creating binary values dict for query terms
-        for term in unique_terms_in_query:
-            if term in self.index:
-                binary_values_for_query_terms[term] = 1
-            else: 
-                binary_values_for_query_terms[term] = 0
-        
-        length_of_vector_for_query = self.length_of_vector_equation(binary_values_for_query_terms.values())
-        
-        # creating sum of tf of each document
-
-        # TODO: rename
-        doc_id_to_tf_dict = dict.fromkeys(self.doc_ids, 0)
-
-        for doc_id in self.doc_ids:
-            # TODO: maybe order doc_ids? 
-
-            # TODO: retrieve from self.index / 
-            # retrieve doc_id -> count ---- for each count do length_of_vector_equation
-            for term_values in self.index:
-                if doc_id in self.index[term_values]:
-                    # debug
-                    print("term_values[doc_id]: {}".format(self.index[term_values][doc_id]))
-                    doc_id_to_tf_dict[doc_id] = term_values[doc_id]
-                else:
-                    continue
-            # debug
-            # print("\nself.index.values()[doc_id]: {}".format(list(self.index.values())[0]))
-            
-            length_of_vector_for_doc = self.length_of_vector_equation(doc_id_to_tf_dict)
-
-        # debug
-        print("doc_id_to_tf_dict: {}".format(doc_id_to_tf_dict))
-
