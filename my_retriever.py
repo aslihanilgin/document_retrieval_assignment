@@ -84,8 +84,6 @@ class Retrieve:
 
         for doc, term_and_tf_dict in self.reconstructed_index.items():
             
-            # debug
-            # import pdb; pdb.set_trace()
 
             doc_terms = set(self.reconstructed_index[doc].keys())
             common_terms = (set(query_term_and_tf_dict.keys())).intersection(doc_terms)
@@ -131,8 +129,19 @@ class Retrieve:
             else: 
                 doc_and_cos_similarity_dict.update({doc: 0})
 
+            # debug
+            # print("finished doc {}".format(doc))
+        
+        # Reference: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
+        # TODO: need to return the ids of docs
+        best_10_cos_similarity = sorted(doc_and_cos_similarity_dict.values(), reverse=True)[:10]
+        best_10_doc_ids = {doc_id for doc_id in doc_and_cos_similarity_dict.keys() if doc_and_cos_similarity_dict[doc_id] in best_10_cos_similarity}
+        
         # debug
-        print("doc_and_cos_similarity_dict: {}".format(sorted(doc_and_cos_similarity_dict.values(), reverse=True)[:10]))
+        # import pdb; pdb.set_trace()
+       
+        
+        return list(best_10_doc_ids)
 
 
     # def tf_term_weighting_computation(self, index, query):
@@ -145,31 +154,27 @@ class Retrieve:
     # of doc ids for relevant docs (in rank order).
     def for_query(self, query):
 
-        # create query dictionary with query terms and their tf value
+        best_10_docs = list()
+
+        # Create query dictionary with query terms and their tf value
         # Reference: https://www.learnpythonwithrune.org/python-dictionaries-for-frequency-count/
         query_term_and_tf_dict = dict()
         for term in query:
             query_term_and_tf_dict[term] = query_term_and_tf_dict.get(term, 0) + 1
 
-        # debug
-        print("query: {}".format(query))
-        print("query_term_and_tf_dict: {}".format(query_term_and_tf_dict))
-
-        #debug
-        self.tf_term_weighting_computation(query_term_and_tf_dict)
-
+        # Calculate the best 10 docs according to term weighting
         # if self.term_weighting == 'binary':
-        #     self.binary_term_weighting_computation()
+        #     best_10_docs = self.binary_term_weighting_computation()
+
 
         # elif self.term_weighting == 'tf':
-        #     self.tf_term_weighting_computation()
+        best_10_docs = self.tf_term_weighting_computation(query_term_and_tf_dict)
 
         # elif self.term_weighting == 'tfidf':
-        #     self.tfidf_term_weighting_computation()
-        # else:
-        #     self.binary_term_weighting_computation()
-
+        #     best_10_docs = self.tfidf_term_weighting_computation()
        
+        # else:
+        #     best_10_docs = self.binary_term_weighting_computation()
 
 
-        return list(range(1,11))
+        return best_10_docs
