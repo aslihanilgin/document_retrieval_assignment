@@ -126,9 +126,6 @@ class Retrieve:
     # Term frequency weighting
     def tf_term_weighting_computation(self, query_term_and_tf_dict):      
 
-        # debug
-        # import pdb; pdb.set_trace()
-
         doc_and_cos_similarity_dict = dict()
 
         # Compare the query with every doc in collection
