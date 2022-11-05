@@ -102,6 +102,9 @@ class Retrieve:
 
     def tf_term_weighting_computation(self, query_term_and_tf_dict):      
 
+        # debug
+        # import pdb; pdb.set_trace()
+
         doc_and_cos_similarity_dict = dict()
 
         for doc, term_and_tf_dict in self.reconstructed_index.items():
@@ -119,8 +122,10 @@ class Retrieve:
                     # only common_terms in doc and their tf  = tf values from reconstructed_index 
                     doc_common_term_and_tf_value_dict[term] = self.reconstructed_index[doc][term]
                     query_common_term_and_tf_value_dict[term] = query_term_and_tf_dict[term]
-                    # TODO: besides binary, following line has to be implemented
-                    # print("term: {}, self.reconstructed_index[doc][term]: {}".format(term, self.reconstructed_index[doc][term]))
+
+
+                # debug
+                # import pdb; pdb.set_trace()
 
                 # Sorting reference: https://stackoverflow.com/questions/9001509/how-do-i-sort-a-dictionary-by-key
                 sorted_query_values_only_with_common_terms = collections.OrderedDict(sorted(query_common_term_and_tf_value_dict.items()))
@@ -130,7 +135,7 @@ class Retrieve:
                 sorted_doc_values_only_with_common_terms = collections.OrderedDict(sorted(doc_common_term_and_tf_value_dict.items()))
 
                 # gets all tf values for doc
-                doc_vector_length = self.vector_length_equation(self.reconstructed_index[doc].values())
+                doc_vector_length = self.vector_length_equation(term_and_tf_dict.values())
 
 
                 cosine_similarity = self.cosine_similarity_computation(doc, 
@@ -169,15 +174,12 @@ class Retrieve:
 
     def tfidf_term_weighting_computation(self, query_term_and_tf_dict):
 
-
         doc_and_cos_similarity_dict = dict()
 
         for doc, term_and_tf_dict in self.reconstructed_index.items():
             
             doc_terms = set(self.reconstructed_index[doc].keys())
             common_terms = (set(query_term_and_tf_dict.keys())).intersection(doc_terms)
-
-            all_doc_terms_and_tf_values = self.reconstructed_index[doc]
 
             if len(common_terms) != 0:
 
@@ -207,7 +209,7 @@ class Retrieve:
                 sorted_doc_values_only_with_common_terms = collections.OrderedDict(sorted(doc_common_term_and_tfidf_value_dict.items()))
                 
                 # gets all tf values for doc
-                doc_vector_length = self.vector_length_equation(all_doc_terms_and_tf_values.values())
+                doc_vector_length = self.vector_length_equation(term_and_tf_dict.values())
 
                 sorted_query_values_only_with_common_terms = collections.OrderedDict(sorted(query_common_term_and_tfidf_value_dict.items()))
 
