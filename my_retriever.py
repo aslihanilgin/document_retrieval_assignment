@@ -24,6 +24,7 @@ class Retrieve:
    
         self.number_of_documents = len(self.doc_ids)
 
+    # Reconstruct index to map doc ids to terms and their counts
     def reconstruct_index(self, initial_index):
 
         reconstructed_index = dict()
@@ -38,18 +39,23 @@ class Retrieve:
 
         return reconstructed_index
 
+    # Find common terms between query and document
     def find_common_terms_in_query_and_doc(self, doc_id, q_term_tf_dict):
+
         doc_terms = set(self.reconstructed_index[doc_id].keys())
         common_terms = (set(q_term_tf_dict.keys())).intersection(doc_terms)
 
         return common_terms
 
+    # Calculate vector length of a query/document
     def vector_length_equation(self, term_weighting_values):
+
         sum = 0
         for value in term_weighting_values:
             sum += pow(value, 2)
         return math.sqrt(sum)
 
+    # Calculate cosine similarity between query and document
     def cosine_similarity_computation(self, doc, query_values, query_vector_length, doc_values, doc_vector_length):
 
         dot_product_query_and_doc = np.dot(list(query_values), list(doc_values))
@@ -57,7 +63,9 @@ class Retrieve:
 
         return cosine_similarity
 
+    # Sort common term dictionaries alphabetically and calculate vector lengths of query and document
     def sort_values_and_calculate_vector_length(self, q_common_term_tf_dict, doc_common_term_tf_dict, q_term_tf_dict, doc_term_tf_dict):
+
         # Sorting reference: https://stackoverflow.com/questions/9001509/how-do-i-sort-a-dictionary-by-key
         sorted_query_values_only_with_common_terms = collections.OrderedDict(sorted(q_common_term_tf_dict.items()))
 
@@ -70,6 +78,7 @@ class Retrieve:
 
         return sorted_query_values_only_with_common_terms, query_vector_length, sorted_doc_values_only_with_common_terms, doc_vector_length
 
+    # Compute the 10 most relevant documents
     def compute_best_10_docs(self, doc_and_cos_similarity_dict):
         # Reference: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
         best_10_cos_similarity = sorted(doc_and_cos_similarity_dict.values(), reverse=True)[:10]
@@ -77,10 +86,12 @@ class Retrieve:
         
         return list(best_10_doc_ids)
 
+    # Binary weighting
     def binary_term_weighting_computation(self, query_term_and_tf_dict):
 
         doc_and_cos_similarity_dict = dict()
 
+        # Compare the query with every doc in collection
         for doc, term_and_tf_dict in self.reconstructed_index.items():
 
             common_terms = self.find_common_terms_in_query_and_doc(doc, query_term_and_tf_dict)
@@ -95,10 +106,11 @@ class Retrieve:
                     doc_common_term_and_tf_value_dict[term] = 1
                     query_common_term_and_tf_value_dict[term] = 1
 
-                # Alphabetical order on terms and calculate vector length
+                # Alphabetical order on terms and calculate vector length for query and document
                 sorted_query_values_only_with_common_terms, query_vector_length, sorted_doc_values_only_with_common_terms, doc_vector_length = self.sort_values_and_calculate_vector_length(query_common_term_and_tf_value_dict, 
                                                                                                                                             doc_common_term_and_tf_value_dict, query_term_and_tf_dict, term_and_tf_dict)
 
+                # Calculate cos similarity 
                 cosine_similarity = self.cosine_similarity_computation(doc, 
                     sorted_query_values_only_with_common_terms.values(), query_vector_length, 
                     sorted_doc_values_only_with_common_terms.values(), doc_vector_length)
@@ -106,10 +118,12 @@ class Retrieve:
                 doc_and_cos_similarity_dict.update({doc: cosine_similarity})
             
             else: 
+                # No common terms between query and document
                 doc_and_cos_similarity_dict.update({doc: 0})
         
         return self.compute_best_10_docs(doc_and_cos_similarity_dict)
 
+    # Term frequency weighting
     def tf_term_weighting_computation(self, query_term_and_tf_dict):      
 
         # debug
@@ -117,6 +131,7 @@ class Retrieve:
 
         doc_and_cos_similarity_dict = dict()
 
+        # Compare the query with every doc in collection
         for doc, term_and_tf_dict in self.reconstructed_index.items():
             
             common_terms = self.find_common_terms_in_query_and_doc(doc, query_term_and_tf_dict)
@@ -131,10 +146,11 @@ class Retrieve:
                     doc_common_term_and_tf_value_dict[term] = self.reconstructed_index[doc][term]
                     query_common_term_and_tf_value_dict[term] = query_term_and_tf_dict[term]
 
-                # Alphabetical order on terms and calculate vector length
+                # Alphabetical order on terms and calculate vector length for query and document
                 sorted_query_values_only_with_common_terms, query_vector_length, sorted_doc_values_only_with_common_terms, doc_vector_length = self.sort_values_and_calculate_vector_length(query_common_term_and_tf_value_dict, 
                                                                                                                                             doc_common_term_and_tf_value_dict, query_term_and_tf_dict, term_and_tf_dict)
 
+                # Calculate cos similarity 
                 cosine_similarity = self.cosine_similarity_computation(doc, 
                     sorted_query_values_only_with_common_terms.values(), query_vector_length, 
                     sorted_doc_values_only_with_common_terms.values(), doc_vector_length)
@@ -142,14 +158,17 @@ class Retrieve:
                 doc_and_cos_similarity_dict.update({doc: cosine_similarity})
             
             else: 
+                # No common terms between query and document
                 doc_and_cos_similarity_dict.update({doc: 0})
         
         return self.compute_best_10_docs(doc_and_cos_similarity_dict)
 
+    # Tfidf weighting
     def tfidf_term_weighting_computation(self, query_term_and_tf_dict):
 
         doc_and_cos_similarity_dict = dict()
 
+        # Compare the query with every doc in collection
         for doc, term_and_tf_dict in self.reconstructed_index.items():
             
             common_terms = self.find_common_terms_in_query_and_doc(doc, query_term_and_tf_dict)
@@ -162,14 +181,14 @@ class Retrieve:
                 # Get tfidf value for each common term
                 for term in common_terms:
 
+                    # Calculate tf value
+                    tf_value_of_doc_term = self.reconstructed_index[doc][term]
+                    tf_value_of_query_term = query_term_and_tf_dict[term]
+
                     # Calculate idf value
                     number_of_docs_containing_term = len(self.index[term])
                     idf_value_of_term = math.log((self.number_of_documents / number_of_docs_containing_term), 10)
 
-                    # Calculate tf value
-                    tf_value_of_doc_term = self.reconstructed_index[doc][term]
-                    tf_value_of_query_term = query_term_and_tf_dict[term]
-                    
                     # Calculate tfidf value 
                     tfidf_value_of_doc_term = tf_value_of_doc_term * idf_value_of_term
                     tfidf_value_of_query_term = tf_value_of_query_term * idf_value_of_term
@@ -177,10 +196,11 @@ class Retrieve:
                     doc_common_term_and_tfidf_value_dict[term] = tfidf_value_of_doc_term
                     query_common_term_and_tfidf_value_dict[term] = tfidf_value_of_query_term
 
-                # Alphabetical order on terms and calculate vector length
+                # Alphabetical order on terms and calculate vector length for query and document
                 sorted_query_values_only_with_common_terms, query_vector_length, sorted_doc_values_only_with_common_terms, doc_vector_length = self.sort_values_and_calculate_vector_length(query_common_term_and_tfidf_value_dict, 
                                                                                                                                             doc_common_term_and_tfidf_value_dict, query_term_and_tf_dict, term_and_tf_dict)
 
+                # Calculate cos similarity 
                 cosine_similarity = self.cosine_similarity_computation(doc, 
                     sorted_query_values_only_with_common_terms.values(), query_vector_length, 
                     sorted_doc_values_only_with_common_terms.values(), doc_vector_length)
@@ -188,6 +208,7 @@ class Retrieve:
                 doc_and_cos_similarity_dict.update({doc: cosine_similarity})
             
             else: 
+                # No common terms between query and document
                 doc_and_cos_similarity_dict.update({doc: 0})
         
         return self.compute_best_10_docs(doc_and_cos_similarity_dict)
@@ -197,8 +218,6 @@ class Retrieve:
     # represented as a list of preprocessed terms). Returns list 
     # of doc ids for relevant docs (in rank order).
     def for_query(self, query):
-
-        best_10_docs = list()
 
         # Create query dictionary with query terms and their tf value
         # Reference: https://www.learnpythonwithrune.org/python-dictionaries-for-frequency-count/
