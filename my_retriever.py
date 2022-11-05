@@ -98,9 +98,6 @@ class Retrieve:
         best_10_cos_similarity = sorted(doc_and_cos_similarity_dict.values(), reverse=True)[:10]
         best_10_doc_ids = {doc_id for doc_id in doc_and_cos_similarity_dict.keys() if doc_and_cos_similarity_dict[doc_id] in best_10_cos_similarity}
         
-        # debug
-        # import pdb; pdb.set_trace()
-        
         return list(best_10_doc_ids)
 
     def tf_term_weighting_computation(self, query_term_and_tf_dict):      
@@ -171,12 +168,16 @@ class Retrieve:
     #     return tfidf_value_of_term
 
     def tfidf_term_weighting_computation(self, query_term_and_tf_dict):
+
+
         doc_and_cos_similarity_dict = dict()
 
         for doc, term_and_tf_dict in self.reconstructed_index.items():
             
             doc_terms = set(self.reconstructed_index[doc].keys())
             common_terms = (set(query_term_and_tf_dict.keys())).intersection(doc_terms)
+
+            all_doc_terms_and_tf_values = self.reconstructed_index[doc]
 
             if len(common_terms) != 0:
 
@@ -199,17 +200,18 @@ class Retrieve:
                     # only common_terms in doc and their tf  = tf values from reconstructed_index 
                     doc_common_term_and_tfidf_value_dict[term] = tfidf_value_of_doc_term
                     query_common_term_and_tfidf_value_dict[term] = tfidf_value_of_query_term
-                    # print("term: {}, self.reconstructed_index[doc][term]: {}".format(term, self.reconstructed_index[doc][term]))
 
 
                 # Sorting reference: https://stackoverflow.com/questions/9001509/how-do-i-sort-a-dictionary-by-key
 
                 sorted_doc_values_only_with_common_terms = collections.OrderedDict(sorted(doc_common_term_and_tfidf_value_dict.items()))
+                
                 # gets all tf values for doc
-                doc_vector_length = self.vector_length_equation(doc_common_term_and_tfidf_value_dict.values())
+                doc_vector_length = self.vector_length_equation(all_doc_terms_and_tf_values.values())
 
                 sorted_query_values_only_with_common_terms = collections.OrderedDict(sorted(query_common_term_and_tfidf_value_dict.items()))
-                query_vector_length = self.vector_length_equation(sorted_query_values_only_with_common_terms.values())
+
+                query_vector_length = self.vector_length_equation(query_term_and_tf_dict.values())
 
 
                 cosine_similarity = self.cosine_similarity_computation(doc, 
