@@ -24,11 +24,8 @@ class Retrieve:
    
         self.number_of_documents = len(self.doc_ids)
 
-
     def reconstruct_index(self, initial_index):
 
-        # initiliase the keys as document ids
-        # reconstructed_index = dict.fromkeys(self.doc_ids, dict())
         reconstructed_index = dict()
 
         for term, doc_id_tf_values_dict in self.index.items():
@@ -40,6 +37,12 @@ class Retrieve:
                     reconstructed_index.get(doc_id).update({term: tf_value})
 
         return reconstructed_index
+
+    def find_common_terms_in_query_and_doc(self, doc_id, q_term_tf_dict):
+        doc_terms = set(self.reconstructed_index[doc_id].keys())
+        common_terms = (set(q_term_tf_dict.keys())).intersection(doc_terms)
+
+        return common_terms
 
     def vector_length_equation(self, term_weighting_values):
         sum = 0
@@ -54,36 +57,47 @@ class Retrieve:
 
         return cosine_similarity
 
+    def sort_values_and_calculate_vector_length(self, q_common_term_tf_dict, doc_common_term_tf_dict, q_term_tf_dict, doc_term_tf_dict):
+        # Sorting reference: https://stackoverflow.com/questions/9001509/how-do-i-sort-a-dictionary-by-key
+        sorted_query_values_only_with_common_terms = collections.OrderedDict(sorted(q_common_term_tf_dict.items()))
+
+        query_vector_length = self.vector_length_equation(q_term_tf_dict.values())
+
+        sorted_doc_values_only_with_common_terms = collections.OrderedDict(sorted(doc_common_term_tf_dict.items()))
+
+        # Get all tf values for doc
+        doc_vector_length = self.vector_length_equation(doc_term_tf_dict.values())
+
+        return sorted_query_values_only_with_common_terms, query_vector_length, sorted_doc_values_only_with_common_terms, doc_vector_length
+
+    def compute_best_10_docs(self, doc_and_cos_similarity_dict):
+        # Reference: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
+        best_10_cos_similarity = sorted(doc_and_cos_similarity_dict.values(), reverse=True)[:10]
+        best_10_doc_ids = {doc_id for doc_id in doc_and_cos_similarity_dict.keys() if doc_and_cos_similarity_dict[doc_id] in best_10_cos_similarity}
+        
+        return list(best_10_doc_ids)
+
     def binary_term_weighting_computation(self, query_term_and_tf_dict):
 
         doc_and_cos_similarity_dict = dict()
 
         for doc, term_and_tf_dict in self.reconstructed_index.items():
-            
-            doc_terms = set(self.reconstructed_index[doc].keys())
-            common_terms = (set(query_term_and_tf_dict.keys())).intersection(doc_terms)
+
+            common_terms = self.find_common_terms_in_query_and_doc(doc, query_term_and_tf_dict)
 
             if len(common_terms) != 0:
 
                 doc_common_term_and_tf_value_dict = dict()
                 query_common_term_and_tf_value_dict = dict()
 
+                # Get binary values for each common term
                 for term in common_terms:
-                    # TODO: might be able to discard this line and the loop
-                    # only common_terms in doc and their tf  = tf values from reconstructed_index 
                     doc_common_term_and_tf_value_dict[term] = 1
                     query_common_term_and_tf_value_dict[term] = 1
 
-                # Sorting reference: https://stackoverflow.com/questions/9001509/how-do-i-sort-a-dictionary-by-key
-                sorted_query_values_only_with_common_terms = collections.OrderedDict(sorted(query_common_term_and_tf_value_dict.items()))
-
-                query_vector_length = self.vector_length_equation(query_term_and_tf_dict.values())
-
-                sorted_doc_values_only_with_common_terms = collections.OrderedDict(sorted(doc_common_term_and_tf_value_dict.items()))
-
-                # gets all tf values for doc
-                doc_vector_length = self.vector_length_equation(self.reconstructed_index[doc].values())
-
+                # Alphabetical order on terms and calculate vector length
+                sorted_query_values_only_with_common_terms, query_vector_length, sorted_doc_values_only_with_common_terms, doc_vector_length = self.sort_values_and_calculate_vector_length(query_common_term_and_tf_value_dict, 
+                                                                                                                                            doc_common_term_and_tf_value_dict, query_term_and_tf_dict, term_and_tf_dict)
 
                 cosine_similarity = self.cosine_similarity_computation(doc, 
                     sorted_query_values_only_with_common_terms.values(), query_vector_length, 
@@ -94,11 +108,7 @@ class Retrieve:
             else: 
                 doc_and_cos_similarity_dict.update({doc: 0})
         
-        # Reference: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
-        best_10_cos_similarity = sorted(doc_and_cos_similarity_dict.values(), reverse=True)[:10]
-        best_10_doc_ids = {doc_id for doc_id in doc_and_cos_similarity_dict.keys() if doc_and_cos_similarity_dict[doc_id] in best_10_cos_similarity}
-        
-        return list(best_10_doc_ids)
+        return self.compute_best_10_docs(doc_and_cos_similarity_dict)
 
     def tf_term_weighting_computation(self, query_term_and_tf_dict):      
 
@@ -109,34 +119,21 @@ class Retrieve:
 
         for doc, term_and_tf_dict in self.reconstructed_index.items():
             
-            doc_terms = set(self.reconstructed_index[doc].keys())
-            common_terms = (set(query_term_and_tf_dict.keys())).intersection(doc_terms)
+            common_terms = self.find_common_terms_in_query_and_doc(doc, query_term_and_tf_dict)
 
             if len(common_terms) != 0:
 
                 doc_common_term_and_tf_value_dict = dict()
                 query_common_term_and_tf_value_dict = dict()
 
+                # Get tf value for each common term
                 for term in common_terms:
-                    # TODO: might be able to discard this line and the loop
-                    # only common_terms in doc and their tf  = tf values from reconstructed_index 
                     doc_common_term_and_tf_value_dict[term] = self.reconstructed_index[doc][term]
                     query_common_term_and_tf_value_dict[term] = query_term_and_tf_dict[term]
 
-
-                # debug
-                # import pdb; pdb.set_trace()
-
-                # Sorting reference: https://stackoverflow.com/questions/9001509/how-do-i-sort-a-dictionary-by-key
-                sorted_query_values_only_with_common_terms = collections.OrderedDict(sorted(query_common_term_and_tf_value_dict.items()))
-
-                query_vector_length = self.vector_length_equation(query_term_and_tf_dict.values())
-
-                sorted_doc_values_only_with_common_terms = collections.OrderedDict(sorted(doc_common_term_and_tf_value_dict.items()))
-
-                # gets all tf values for doc
-                doc_vector_length = self.vector_length_equation(term_and_tf_dict.values())
-
+                # Alphabetical order on terms and calculate vector length
+                sorted_query_values_only_with_common_terms, query_vector_length, sorted_doc_values_only_with_common_terms, doc_vector_length = self.sort_values_and_calculate_vector_length(query_common_term_and_tf_value_dict, 
+                                                                                                                                            doc_common_term_and_tf_value_dict, query_term_and_tf_dict, term_and_tf_dict)
 
                 cosine_similarity = self.cosine_similarity_computation(doc, 
                     sorted_query_values_only_with_common_terms.values(), query_vector_length, 
@@ -147,30 +144,7 @@ class Retrieve:
             else: 
                 doc_and_cos_similarity_dict.update({doc: 0})
         
-        # Reference: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
-        best_10_cos_similarity = sorted(doc_and_cos_similarity_dict.values(), reverse=True)[:10]
-        best_10_doc_ids = {doc_id for doc_id in doc_and_cos_similarity_dict.keys() if doc_and_cos_similarity_dict[doc_id] in best_10_cos_similarity}
-        
-        return list(best_10_doc_ids)
-
-    # def calculate_tfidf_value(self, tf_value_of_term, dict_length, collection_type):
-    #     # debug
-    #     import pdb; pdb.set_trace()
-
-
-    #     if collection_type == "doc":
-    #         number_of_docs_containing_term = 
-    #         idf_value_of_term = math.log((self.number_of_documents / total_number_of_terms), 10)
-
-    #     elif collection_type == "query":
-    #         doc_terms_without_common_terms = doc_terms.difference(set(query))
-
-    #         number_of_docs_containing_term =
-    #         idf_value_of_term = math.log((1 / total_number_of_terms), 10)
-        
-    #     tfidf_value_of_term = tf_value_of_term * idf_value_of_term
-        
-    #     return tfidf_value_of_term
+        return self.compute_best_10_docs(doc_and_cos_similarity_dict)
 
     def tfidf_term_weighting_computation(self, query_term_and_tf_dict):
 
@@ -178,43 +152,34 @@ class Retrieve:
 
         for doc, term_and_tf_dict in self.reconstructed_index.items():
             
-            doc_terms = set(self.reconstructed_index[doc].keys())
-            common_terms = (set(query_term_and_tf_dict.keys())).intersection(doc_terms)
+            common_terms = self.find_common_terms_in_query_and_doc(doc, query_term_and_tf_dict)
 
             if len(common_terms) != 0:
 
                 doc_common_term_and_tfidf_value_dict = dict()
                 query_common_term_and_tfidf_value_dict = dict()
 
+                # Get tfidf value for each common term
                 for term in common_terms:
 
                     # Calculate idf value
                     number_of_docs_containing_term = len(self.index[term])
                     idf_value_of_term = math.log((self.number_of_documents / number_of_docs_containing_term), 10)
 
+                    # Calculate tf value
                     tf_value_of_doc_term = self.reconstructed_index[doc][term]
                     tf_value_of_query_term = query_term_and_tf_dict[term]
                     
+                    # Calculate tfidf value 
                     tfidf_value_of_doc_term = tf_value_of_doc_term * idf_value_of_term
                     tfidf_value_of_query_term = tf_value_of_query_term * idf_value_of_term
 
-                    # TODO: might be able to discard this line and the loop
-                    # only common_terms in doc and their tf  = tf values from reconstructed_index 
                     doc_common_term_and_tfidf_value_dict[term] = tfidf_value_of_doc_term
                     query_common_term_and_tfidf_value_dict[term] = tfidf_value_of_query_term
 
-
-                # Sorting reference: https://stackoverflow.com/questions/9001509/how-do-i-sort-a-dictionary-by-key
-
-                sorted_doc_values_only_with_common_terms = collections.OrderedDict(sorted(doc_common_term_and_tfidf_value_dict.items()))
-                
-                # gets all tf values for doc
-                doc_vector_length = self.vector_length_equation(term_and_tf_dict.values())
-
-                sorted_query_values_only_with_common_terms = collections.OrderedDict(sorted(query_common_term_and_tfidf_value_dict.items()))
-
-                query_vector_length = self.vector_length_equation(query_term_and_tf_dict.values())
-
+                # Alphabetical order on terms and calculate vector length
+                sorted_query_values_only_with_common_terms, query_vector_length, sorted_doc_values_only_with_common_terms, doc_vector_length = self.sort_values_and_calculate_vector_length(query_common_term_and_tfidf_value_dict, 
+                                                                                                                                            doc_common_term_and_tfidf_value_dict, query_term_and_tf_dict, term_and_tf_dict)
 
                 cosine_similarity = self.cosine_similarity_computation(doc, 
                     sorted_query_values_only_with_common_terms.values(), query_vector_length, 
@@ -225,12 +190,7 @@ class Retrieve:
             else: 
                 doc_and_cos_similarity_dict.update({doc: 0})
         
-        # Reference: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
-        best_10_cos_similarity = sorted(doc_and_cos_similarity_dict.values(), reverse=True)[:10]
-        best_10_doc_ids = {doc_id for doc_id in doc_and_cos_similarity_dict.keys() if doc_and_cos_similarity_dict[doc_id] in best_10_cos_similarity}
-
-
-        return list(best_10_doc_ids)
+        return self.compute_best_10_docs(doc_and_cos_similarity_dict)
 
 
     # Method performing retrieval for a single query (which is 
@@ -259,6 +219,5 @@ class Retrieve:
         else:
             print("There wasn't any term weighting specified. Using binary as default.")
             best_10_docs = self.binary_term_weighting_computation(query_term_and_tf_dict)
-
 
         return best_10_docs
