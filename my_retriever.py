@@ -25,7 +25,7 @@ class Retrieve:
         self.number_of_documents = len(self.doc_ids)
 
     # Reconstruct index to map doc ids to terms and their counts
-    def reconstruct_index(self, initial_index):
+    def reconstruct_index(self):
 
         reconstructed_index = dict()
 
@@ -55,14 +55,6 @@ class Retrieve:
             sum += pow(value, 2)
         return math.sqrt(sum)
 
-    # Calculate cosine similarity between query and document
-    def cosine_similarity_computation(self, doc, query_values, query_vector_length, doc_values, doc_vector_length):
-
-        dot_product_query_and_doc = np.dot(list(query_values), list(doc_values))
-        cosine_similarity = dot_product_query_and_doc / (query_vector_length * doc_vector_length)
-
-        return cosine_similarity
-
     # Sort common term dictionaries alphabetically and calculate vector lengths of query and document
     def sort_values_and_calculate_vector_length(self, q_common_term_tf_dict, doc_common_term_tf_dict, q_term_tf_dict, doc_term_tf_dict):
 
@@ -77,6 +69,14 @@ class Retrieve:
         doc_vector_length = self.vector_length_equation(doc_term_tf_dict.values())
 
         return sorted_query_values_only_with_common_terms, query_vector_length, sorted_doc_values_only_with_common_terms, doc_vector_length
+
+    # Calculate cosine similarity between query and document
+    def cosine_similarity_computation(self, doc, query_values, query_vector_length, doc_values, doc_vector_length):
+
+        dot_product_query_and_doc = np.dot(list(query_values), list(doc_values))
+        cosine_similarity = dot_product_query_and_doc / (query_vector_length * doc_vector_length)
+
+        return cosine_similarity
 
     # Compute the 10 most relevant documents
     def compute_best_10_docs(self, doc_and_cos_similarity_dict):
