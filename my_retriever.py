@@ -15,7 +15,7 @@ class Retrieve:
         self.index = index
         self.term_weighting = term_weighting
         self.num_docs = self.compute_number_of_documents()
-        self.reconstructed_index = self.reconstruct_index(self.index)
+        self.reconstructed_index = self.reconstruct_index()
         
     def compute_number_of_documents(self):
         self.doc_ids = set() 
@@ -231,9 +231,5 @@ class Retrieve:
 
         elif self.term_weighting == 'tfidf':
             best_10_docs = self.tfidf_term_weighting_computation(query_term_and_tf_dict)
-       
-        else:
-            print("There wasn't any term weighting specified. Using binary as default.")
-            best_10_docs = self.binary_term_weighting_computation(query_term_and_tf_dict)
 
         return best_10_docs
