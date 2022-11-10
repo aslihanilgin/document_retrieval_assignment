@@ -1,5 +1,3 @@
-
-from bdb import set_trace
 from cmath import sqrt
 import math
 from operator import index
